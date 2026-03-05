@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const auth = requireApiKey(request);
   if (!auth.ok) {
-    return NextResponse.json(auth.body, { status: auth.status });
+    return NextResponse.json({ error: 'Invalid or missing X-API-Key' }, { status: 401 });
   }
   try {
     const body = await request.json();

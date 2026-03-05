@@ -41,7 +41,7 @@ export default function EnrollmentInfoCard() {
           </ListItem>
           <ListItem display="flex" alignItems="flex-start" gap="2">
             <ListIcon as={MdCheckCircle} color="green.500" mt="0.5" />
-            <span><strong>Enroll with a name</strong> — Use the <strong>Enroll Face</strong> card on this dashboard (\"Start enrollment\" button) or run <code style={{ background: 'var(--chakra-colors-gray-100)', padding: '2px 6px', borderRadius: '4px' }}>py enroll_face.py</code> from the <code style={{ background: 'var(--chakra-colors-gray-100)', padding: '2px 6px', borderRadius: '4px' }}>face-recognition-poc</code> folder to scan, analyse, and add a face with a specific name (e.g. Soumeet, ID 1).</span>
+            <span><strong>Enroll with a name</strong> — Use the <strong>Enroll Face</strong> card on this dashboard (&quot;Start enrollment&quot; button) or run <code style={{ background: 'var(--chakra-colors-gray-100)', padding: '2px 6px', borderRadius: '4px' }}>py enroll_face.py</code> from the <code style={{ background: 'var(--chakra-colors-gray-100)', padding: '2px 6px', borderRadius: '4px' }}>face-recognition-poc</code> folder to scan, analyse, and add a face with a specific name (e.g. Soumeet, ID 1).</span>
           </ListItem>
           <ListItem display="flex" alignItems="flex-start" gap="2">
             <ListIcon as={MdCheckCircle} color="green.500" mt="0.5" />

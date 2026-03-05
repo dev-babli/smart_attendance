@@ -13,7 +13,7 @@ export async function POST(
 ) {
   const auth = requireApiKey(request);
   if (!auth.ok) {
-    return NextResponse.json(auth.body, { status: auth.status });
+    return NextResponse.json({ error: 'Invalid or missing X-API-Key' }, { status: 401 });
   }
   try {
     const { id } = await params;

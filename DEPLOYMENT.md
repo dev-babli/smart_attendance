@@ -109,7 +109,15 @@ The Next.js app (Dashboard + API) can be deployed to Vercel for free. For a deta
     - Vercel will give you a URL like `https://smart-attendance.vercel.app`.
     - Use this URL in your Python script (`ATTENDANCE_API_URL`).
 
-## 2. Cloud VM Deployment (AI Engine)
+## 2. Render Deployment (Python / AI Engine)
+
+Deploy the Python face recognition engine to Render as a Web Service. For a detailed walkthrough, see [docs/RENDER_DEPLOYMENT.md](docs/RENDER_DEPLOYMENT.md).
+
+Summary: Create a Web Service, set Root Directory to `face-recognition-poc`, use `pip install -r requirements.txt && pip install opencv-python-headless` for build, `python attendance_poc.py` for start. Set `ATTENDANCE_API_URL` to your Vercel URL and `VIDEO_SOURCE` to an RTSP or tunneled camera URL. In Vercel, set `CAMERA_STREAM_URL` to your Render service URL.
+
+---
+
+## 3. Cloud VM Deployment (AI Engine)
 
 The Python script (`attendance_rtsp_opencv.py`) needs to run on a machine that can access the camera stream. Since Vercel is serverless (short timeouts), you need a VM (AWS EC2, DigitalOcean, or a local PC).
 
@@ -139,7 +147,7 @@ The Python script (`attendance_rtsp_opencv.py`) needs to run on a machine that c
     python3 attendance_rtsp_opencv.py
     ```
 
-## 3. Camera Access (Tailscale VPN)
+## 4. Camera Access (Tailscale VPN)
 
 To access the Dubai camera securely without Pinggy timeouts:
 
