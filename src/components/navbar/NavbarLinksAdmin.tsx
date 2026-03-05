@@ -25,7 +25,6 @@ import { FaEthereum } from 'react-icons/fa';
 import { IoMdMoon, IoMdSunny } from 'react-icons/io';
 import { MdNotificationsNone } from 'react-icons/md';
 import routes from 'routes';
-import { createClient } from 'utils/supabase/client';
 import { useRouter } from 'next/navigation';
 
 export default function HeaderLinks(props: {
@@ -37,10 +36,8 @@ export default function HeaderLinks(props: {
   const { tenantId, setTenantId } = useCampus();
   const { colorMode, toggleColorMode } = useColorMode();
   const router = useRouter();
-  const supabase = createClient();
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
+  const handleLogout = () => {
     router.push('/admin/dashboard');
     router.refresh();
   };
