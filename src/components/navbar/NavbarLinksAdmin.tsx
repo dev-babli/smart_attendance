@@ -41,7 +41,7 @@ export default function HeaderLinks(props: {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.push('/auth/login');
+    router.push('/admin/dashboard');
     router.refresh();
   };
   // Chakra Color Mode
