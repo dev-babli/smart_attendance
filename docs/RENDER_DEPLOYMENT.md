@@ -17,6 +17,12 @@ Deploy the Python attendance engine to Render so it runs in the cloud. The dashb
 
 ## Step 1: Create a Web Service on Render
 
+**Option A – Blueprint (recommended):**  
+1. Go to [render.com](https://render.com) → **Dashboard** → **New** → **Blueprint**
+2. Connect your GitHub repo; Render will detect `render.yaml`
+3. Add `ATTENDANCE_API_URL` and `VIDEO_SOURCE` in the service env vars, then deploy
+
+**Option B – Manual:**  
 1. Go to [render.com](https://render.com) → **Dashboard** → **New** → **Web Service**
 2. Connect your GitHub repo
 3. Choose the repo and branch (e.g. `main`)
@@ -31,10 +37,10 @@ Deploy the Python attendance engine to Render so it runs in the cloud. The dashb
 | **Region** | Choose closest to your camera/Vercel |
 | **Root Directory** | `face-recognition-poc` |
 | **Runtime** | `Python 3` |
-| **Build Command** | `pip install -r requirements.txt && pip install opencv-python-headless` |
+| **Build Command** | `pip install -r requirements-render.txt` |
 | **Start Command** | `python attendance_poc.py` |
 
-Use `opencv-python-headless` because Render has no display (replaces `opencv-python` for server use).
+Use `requirements-render.txt` (no `face_recognition`/dlib) to avoid OOM on Render; the app uses the OpenCV fallback and still works.
 
 ---
 
@@ -46,6 +52,7 @@ In **Environment** → **Environment Variables**, add:
 |----------|-------|----------|
 | `ATTENDANCE_API_URL` | `https://your-app.vercel.app` | Yes |
 | `VIDEO_SOURCE` | `rtsp://user:pass@host:554/...` or `http://...` | Yes |
+| `HEADLESS` | `1` | Yes (no display on Render) |
 | `ATTENDANCE_API_KEY` | Same as Vercel | If you use API key auth |
 | `STREAM_PORT` | `5000` | Optional (default 5000) |
 
@@ -100,13 +107,17 @@ Render must be able to reach this URL. Use a static IP, VPN, or Tailscale.
 
 If you cannot expose the camera to Render, run `attendance_poc.py` locally and set `ATTENDANCE_API_URL` to your Vercel URL. See [DEPLOYMENT.md](../DEPLOYMENT.md) for the Windows setup.
 
+### D. On-Demand URL Change (Dashboard)
+
+The middleman can change the RTSP/HTTP camera URL from the dashboard without redeploying. In **Demo Setup**, use the "Camera URL (RTSP)" field: enter the URL and click **Save**. The Python engine on Render fetches the config every 60 seconds and reconnects when the URL changes. Initial value can come from env `VIDEO_SOURCE`; once saved from the dashboard, the API config takes precedence.
+
 ---
 
 ## Troubleshooting
 
 | Issue | Fix |
 |-------|-----|
-| Build fails on `face_recognition` | dlib can be slow to build. Consider removing `face_recognition` from requirements and using the OpenCV fallback. |
+| OOM (out of memory) during build | Use `requirements-render.txt` (already configured); it skips face_recognition/dlib. |
 | No video input | Ensure `VIDEO_SOURCE` is reachable from Render (test with `curl` from another cloud host). |
 | Service sleeps (free tier) | Upgrade to Starter or use a cron job to ping the service. |
 | MJPEG not loading in dashboard | Check `CAMERA_STREAM_URL` and CORS; Render Web Services allow all origins by default. |

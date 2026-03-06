@@ -1,0 +1,18 @@
+# Render Blueprint - one-click deploy for Python face recognition
+# Dashboard stays on Vercel; this runs the attendance engine
+# Add ATTENDANCE_API_URL and VIDEO_SOURCE in Render Dashboard after sync
+services:
+  - type: web
+    name: smart-attendance-python
+    runtime: python
+    rootDir: face-recognition-poc
+    plan: free
+    buildCommand: pip install -r requirements-render.txt
+    startCommand: python attendance_poc.py
+    envVars:
+      - key: HEADLESS
+        value: "1"
+      - key: ATTENDANCE_API_URL
+        sync: false
+      - key: VIDEO_SOURCE
+        sync: false

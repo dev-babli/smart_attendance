@@ -32,6 +32,59 @@ export default function DemoSetupCard() {
   const [pythonOk, setPythonOk] = useState<boolean | null>(null);
   const [testPhone, setTestPhone] = useState('');
   const [testing, setTesting] = useState(false);
+  const [cameraUrl, setCameraUrl] = useState('');
+  const [cameraUrlSaving, setCameraUrlSaving] = useState(false);
+
+  const fetchCameraConfig = useCallback(async () => {
+    try {
+      const res = await fetch('/api/camera-config');
+      const data = await res.json();
+      setCameraUrl(data?.video_source ?? '');
+    } catch {
+      setCameraUrl('');
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCameraConfig();
+  }, [fetchCameraConfig]);
+
+  const onSaveCameraUrl = useCallback(async () => {
+    setCameraUrlSaving(true);
+    try {
+      const res = await fetch('/api/camera-config', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ video_source: cameraUrl.trim() || null }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCameraUrl(data?.video_source ?? '');
+        toast({
+          title: 'Camera URL saved',
+          description: 'Python engine will pick up the change within ~60 seconds.',
+          status: 'success',
+          isClosable: true,
+        });
+      } else {
+        toast({
+          title: 'Save failed',
+          description: data?.error ?? 'Invalid URL',
+          status: 'error',
+          isClosable: true,
+        });
+      }
+    } catch (e) {
+      toast({
+        title: 'Request failed',
+        description: e instanceof Error ? e.message : 'Network error',
+        status: 'error',
+        isClosable: true,
+      });
+    } finally {
+      setCameraUrlSaving(false);
+    }
+  }, [cameraUrl, toast]);
 
   const checkPython = useCallback(async () => {
     try {
@@ -187,6 +240,35 @@ export default function DemoSetupCard() {
                 isLoading={testing}
               >
                 Test WhatsApp
+              </Button>
+            </Flex>
+          </Box>
+
+          {/* Camera URL (RTSP) - for Render / cloud demos */}
+          <Box>
+            <Text color={textColor} fontWeight="600" fontSize="sm" mb="2">
+              Camera URL (RTSP)
+            </Text>
+            <Text fontSize="xs" color="gray.500" mb="2">
+              Used by Python engine on Render. Change when switching schools or demos. Supports
+              rtsp://, http:// (e.g. Pinggy tunnel).
+            </Text>
+            <Flex gap="2" align="center" flexWrap="wrap">
+              <Input
+                placeholder="rtsp://... or http://... (leave empty to use env VIDEO_SOURCE)"
+                size="sm"
+                flex="1"
+                minW="200px"
+                value={cameraUrl}
+                onChange={(e) => setCameraUrl(e.target.value)}
+              />
+              <Button
+                size="sm"
+                colorScheme="brand"
+                onClick={onSaveCameraUrl}
+                isLoading={cameraUrlSaving}
+              >
+                Save
               </Button>
             </Flex>
           </Box>
