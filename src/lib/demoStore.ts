@@ -23,7 +23,7 @@ const DATA_DIR = join(process.cwd(), 'data');
 const LOG_FILE = join(DATA_DIR, 'attendanceLogs.json');
 const KV_KEY = 'attendance_logs';
 
-function hasKV(): boolean {
+function useKV(): boolean {
   return !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
 }
 
@@ -74,12 +74,12 @@ function writeLogsToDisk(logs: AttendanceLog[]): void {
 }
 
 export async function addLog(log: Omit<AttendanceLog, 'id' | 'created_at'>): Promise<AttendanceLog> {
-  const logs = hasKV() ? await readLogsFromKV() : readLogsFromDisk();
+  const logs = useKV() ? await readLogsFromKV() : readLogsFromDisk();
   const id = `evt_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
   const created_at = Date.now();
   const entry: AttendanceLog = { ...log, id, created_at };
   logs.push(entry);
-  if (hasKV()) {
+  if (useKV()) {
     await writeLogsToKV(logs);
   } else {
     writeLogsToDisk(logs);
@@ -94,7 +94,7 @@ export async function getLogs(
   limit = DEFAULT_PAGE_SIZE,
   offset = 0
 ): Promise<AttendanceLog[]> {
-  const logs = hasKV() ? await readLogsFromKV() : readLogsFromDisk();
+  const logs = useKV() ? await readLogsFromKV() : readLogsFromDisk();
   let filtered = tenant_id ? logs.filter((l) => l.tenant_id === tenant_id) : logs;
   filtered = filtered.slice().reverse();
   return filtered.slice(offset, offset + limit);
@@ -105,12 +105,12 @@ export async function updateLogStatus(
   status: AttendanceStatus,
   error_message?: string
 ): Promise<void> {
-  const logs = hasKV() ? await readLogsFromKV() : readLogsFromDisk();
+  const logs = useKV() ? await readLogsFromKV() : readLogsFromDisk();
   const entry = logs.find((l) => l.id === id);
   if (entry) {
     entry.status = status;
     if (error_message !== undefined) entry.error_message = error_message;
-    if (hasKV()) {
+    if (useKV()) {
       await writeLogsToKV(logs);
     } else {
       writeLogsToDisk(logs);
@@ -119,7 +119,7 @@ export async function updateLogStatus(
 }
 
 export async function getLogById(id: string): Promise<AttendanceLog | undefined> {
-  const logs = hasKV() ? await readLogsFromKV() : readLogsFromDisk();
+  const logs = useKV() ? await readLogsFromKV() : readLogsFromDisk();
   return logs.find((l) => l.id === id);
 }
 
@@ -130,7 +130,7 @@ export async function getStats(tenant_id?: string): Promise<{
   failed: number;
   pending: number;
 }> {
-  const logs = hasKV() ? await readLogsFromKV() : readLogsFromDisk();
+  const logs = useKV() ? await readLogsFromKV() : readLogsFromDisk();
   const list = tenant_id ? logs.filter((l) => l.tenant_id === tenant_id) : logs;
   return {
     total: list.length,

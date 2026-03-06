@@ -97,7 +97,7 @@ const X = ({ className = '', size = 24 }: { className?: string; size?: number })
   </svg>
 );
 
-// SaasAble-style: light navbar, center links, Dashboard + Dashboard
+// SaasAble-style: light navbar, center links, Sign in + Dashboard
 const Navigation = React.memo(() => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
@@ -122,8 +122,8 @@ const Navigation = React.memo(() => {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
-            <Button type="button" variant="ghost" size="sm" href="/admin/dashboard">
-              Dashboard
+            <Button type="button" variant="ghost" size="sm" href="/auth/sign-in">
+              Sign in
             </Button>
             <Button type="button" variant="default" size="sm" href="/admin/dashboard">
               Dashboard
@@ -154,8 +154,8 @@ const Navigation = React.memo(() => {
               Documentation
             </a>
             <div className="flex flex-col gap-2 pt-4">
-              <Button type="button" variant="outline" size="sm" href="/admin/dashboard">
-                Dashboard
+              <Button type="button" variant="outline" size="sm" href="/auth/sign-in">
+                Sign in
               </Button>
               <Button type="button" variant="default" size="sm" href="/admin/dashboard">
                 Dashboard
@@ -214,8 +214,8 @@ const Hero = React.memo(() => (
         <Button variant="default" size="lg" href="/admin/dashboard" className="rounded-lg">
           Go to Dashboard
         </Button>
-        <Button variant="outline" size="lg" href="/admin/dashboard" className="rounded-lg">
-          Dashboard
+        <Button variant="outline" size="lg" href="/auth/sign-in" className="rounded-lg">
+          Sign in
         </Button>
       </div>
     </div>
@@ -305,8 +305,8 @@ const Cta = React.memo(() => (
         <Button variant="default" size="lg" href="/admin/dashboard" className="rounded-lg">
           Go to Dashboard
         </Button>
-        <Button variant="outline" size="lg" href="/admin/dashboard" className="rounded-lg">
-          Dashboard
+        <Button variant="outline" size="lg" href="/auth/sign-in" className="rounded-lg">
+          Sign in
         </Button>
       </div>
     </div>

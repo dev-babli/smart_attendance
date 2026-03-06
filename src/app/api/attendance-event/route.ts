@@ -15,7 +15,7 @@ export type AttendanceEventBody = {
 export async function POST(request: NextRequest) {
   const auth = requireApiKey(request);
   if (!auth.ok) {
-    return NextResponse.json({ error: 'Invalid or missing X-API-Key' }, { status: 401 });
+    return NextResponse.json(auth.body, { status: auth.status });
   }
   try {
     const body = (await request.json()) as AttendanceEventBody;

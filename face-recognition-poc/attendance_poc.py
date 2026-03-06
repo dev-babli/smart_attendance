@@ -46,30 +46,6 @@ def _api_headers():
         h["X-API-Key"] = API_KEY
     return h
 
-
-def fetch_camera_config() -> str | int | None:
-    """Fetch video_source from API. Returns None on failure or if not set."""
-    try:
-        r = requests.get(
-            f"{API_BASE_URL}/api/camera-config",
-            headers=_api_headers(),
-            timeout=5,
-        )
-        if not r.ok:
-            return None
-        data = r.json() if r.headers.get("content-type", "").startswith("application/json") else {}
-        vs = data.get("video_source")
-        if vs is None or (isinstance(vs, str) and not vs.strip()):
-            return None
-        s = str(vs).strip()
-        if s == "0":
-            return 0
-        if s.startswith("rtsp://") or s.startswith("http://") or s.startswith("https://"):
-            return s
-        return None
-    except Exception:
-        return None
-
 # Video: 0 = webcam, or DroidCam/IP URL (set by env or prompt at start)
 DEFAULT_CAM_IP = "192.168.29.224"
 DEFAULT_CAM_PORT = "4747"
@@ -364,61 +340,31 @@ def log_attendance(name: str, confidence: float):
         print(f">>> API ERROR: {e}")
 
 
-def resolve_video_source_at_startup() -> bool:
-    """
-    Resolve VIDEO_SOURCE at startup. Priority: API > env > camera_config.json > prompt.
-    Returns True if resolved, False if we need to prompt (local only).
-    """
+def prompt_camera_config():
+    """Use shared camera config (same as enroll_face, stream_server, attendance_rtsp_opencv)."""
     global VIDEO_SOURCE, STREAM_PORT
-
-    # 1. Try API (when ATTENDANCE_API_URL points to Vercel)
-    if API_BASE_URL and not API_BASE_URL.startswith("http://localhost"):
-        vs = fetch_camera_config()
-        if vs is not None:
-            VIDEO_SOURCE = vs
-            STREAM_PORT = int(os.environ.get("STREAM_PORT", str(DEFAULT_STREAM_PORT)))
-            return True
-
-    # 2. Env VIDEO_SOURCE
-    vs = os.environ.get("VIDEO_SOURCE")
-    if vs is not None and str(vs).strip():
-        VIDEO_SOURCE = int(vs) if str(vs).strip().isdigit() else str(vs).strip()
-        STREAM_PORT = int(os.environ.get("STREAM_PORT", str(DEFAULT_STREAM_PORT)))
-        return True
-
-    # 3. camera_config.json (local)
     try:
         from camera_config import load_camera_config, prompt_camera_config as shared_prompt
         vs, sp = load_camera_config()
         if vs is not None and sp is not None:
             VIDEO_SOURCE = vs
             STREAM_PORT = sp
-            return True
-        if os.environ.get("HEADLESS", "").lower() in ("1", "true", "yes"):
-            # Headless (Render): no interactive prompt, must have env or API
-            print("HEADLESS: No camera config from API/env. Set VIDEO_SOURCE or save from dashboard.")
-            return False
+            return
         VIDEO_SOURCE, STREAM_PORT = shared_prompt(ask_stream_port=True)
-        return True
     except ImportError:
-        pass
-
-    # 4. Interactive prompt (local only)
-    print("Camera source (DroidCam / IP webcam, or webcam)")
-    ip = input(f"  IP address (or 0 for webcam) [{DEFAULT_CAM_IP}]: ").strip() or DEFAULT_CAM_IP
-    if ip == "0" or ip.lower() == "webcam":
-        VIDEO_SOURCE = 0
-    else:
-        port = input(f"  Port [{DEFAULT_CAM_PORT}]: ").strip() or DEFAULT_CAM_PORT
-        VIDEO_SOURCE = f"http://{ip}:{port}/video"
-    STREAM_PORT = int(input(f"  Stream port [{DEFAULT_STREAM_PORT}]: ").strip() or str(DEFAULT_STREAM_PORT))
-    return True
-
-
-def prompt_camera_config():
-    """Use shared camera config (same as enroll_face, stream_server). Calls resolve_video_source_at_startup."""
-    if not resolve_video_source_at_startup():
-        raise SystemExit(1)
+        vs = os.environ.get("VIDEO_SOURCE")
+        if vs is not None:
+            VIDEO_SOURCE = int(vs) if vs.isdigit() else vs
+            STREAM_PORT = int(os.environ.get("STREAM_PORT", str(DEFAULT_STREAM_PORT)))
+            return
+        print("Camera source (DroidCam / IP webcam, or webcam)")
+        ip = input(f"  IP address (or 0 for webcam) [{DEFAULT_CAM_IP}]: ").strip() or DEFAULT_CAM_IP
+        if ip == "0" or ip.lower() == "webcam":
+            VIDEO_SOURCE = 0
+        else:
+            port = input(f"  Port [{DEFAULT_CAM_PORT}]: ").strip() or DEFAULT_CAM_PORT
+            VIDEO_SOURCE = f"http://{ip}:{port}/video"
+        STREAM_PORT = int(input(f"  Stream port [{DEFAULT_STREAM_PORT}]: ").strip() or str(DEFAULT_STREAM_PORT))
 
 
 def _students_json() -> bytes:
@@ -500,7 +446,6 @@ def _run_stream_server():
 
 def main():
     global VIDEO_SOURCE, _latest_frame, _stream_ready
-    _headless = os.environ.get("HEADLESS", "").lower() in ("1", "true", "yes")
     prompt_camera_config()
     load_students()
     known_faces = load_known_faces()
@@ -533,40 +478,13 @@ def main():
 
     global last_frame_time
     last_frame_time = 0
-    last_config_check = 0.0
-    config_check_interval = 60.0  # seconds
-    last_fetched_url: str | int | None = VIDEO_SOURCE
-    use_api_config = bool(API_BASE_URL and not API_BASE_URL.startswith("http://localhost"))
 
     while True:
-        now = time.time()
-
-        # Hot-switch: fetch camera config from API every 60s
-        if use_api_config and (now - last_config_check) >= config_check_interval:
-            last_config_check = now
-            new_vs = fetch_camera_config()
-            if new_vs is not None and new_vs != last_fetched_url:
-                norm = (0 if new_vs == 0 else str(new_vs))
-                old_norm = (0 if last_fetched_url == 0 else str(last_fetched_url))
-                if norm != old_norm:
-                    print(f"\n>>> Camera URL changed, reconnecting: {new_vs}")
-                    cap.release()
-                    for attempt in range(3):
-                        cap = cv2.VideoCapture(new_vs)
-                        if cap.isOpened():
-                            last_fetched_url = new_vs
-                            print(">>> Reconnected successfully.")
-                            break
-                        cap.release()
-                        time.sleep(2)
-                    else:
-                        print(">>> Reconnect failed, keeping previous source.")
-                        cap = cv2.VideoCapture(last_fetched_url if last_fetched_url is not None else VIDEO_SOURCE)
-
         ret, frame = cap.read()
         if not ret:
             break
 
+        now = time.time()
         if now - last_frame_time < frame_interval:
             cap.grab()  # Skip frame
             continue
@@ -601,15 +519,12 @@ def main():
             _latest_frame = frame.copy()
             _stream_ready = True
 
-        # Skip GUI on headless (Render, cloud servers)
-        if not _headless:
-            cv2.imshow("Attendance PoC", frame)
-            if cv2.waitKey(1) & 0xFF == ord("q"):
-                break
+        cv2.imshow("Attendance PoC", frame)
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            break
 
     cap.release()
-    if not _headless:
-        cv2.destroyAllWindows()
+    cv2.destroyAllWindows()
     print("Done.")
 
 
